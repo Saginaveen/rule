@@ -1,0 +1,872 @@
+trigger:
+  enabled: false
+pool:
+  vmImage: windows-latest
+parameters:
+- name: environment
+  displayName: 'Environment to deploy'
+  type: string
+  default: Integration
+  values:
+  - Integration
+  - PreProd
+  - Production
+- name: prefix
+  displayName: 'Prefix'
+  type: string
+- name: securityTest
+  displayName: 'Deploy Security Test stage'
+  type: boolean
+  default: false
+- name: Lint
+  displayName: 'Deploy Lint stage'
+  type: boolean
+  default: false
+- name: Preview
+  displayName: 'Deploy preview stage'
+  type: boolean
+  default: false
+- name: Build
+  displayName: 'Deploy Build stage'
+  type: boolean
+  default: false
+- name: InfrastructureDeployment
+  displayName: 'Deploy Infrastructure stage'
+  type: boolean
+  default: false
+- name: ApplicationDeployment
+  displayName: 'Deploy Application stage'
+  type: boolean
+  default: false
+variables:
+- name: prefix
+  value: CH1
+- name: suffix
+  value: -Play
+- name: azureSubscriptionEndpoint
+  value: 'Contoso Hotels Tenant - Integration'
+- name: location
+  value: eastus
+- name: vmSize
+  value: "Standard_B2s"
+- name: midFix
+  value: la6t5k
+- name: retentionPeriod
+  value: 30
+- name: sqldbMaxSizeBytes
+  value: 32212254720
+- name: dbSkuName
+  value: Standard
+- name: dbSkuTier
+  value: Standard
+- name: dbSkuCapacity
+  value: 100
+- name: dbKind
+  value: v12.0,user
+- name: dbRedundancy
+  value: Local
+- name: webAppPackageName
+  value: RetailApp
+- name: appName
+  value: RetailApp
+- name: usageGenName
+  value: UsageGenFunc
+- name: databaseName
+  value: RetailAppDB
+- name: vmComputerName
+  value: RETAILVM01
+- name: vmName
+  value: $(prefix)-$(vmComputerName)$(suffix)
+- name: addressPrefixes
+  value: 172.18.0.0/24
+- name: cpuLoadAppName
+  value: ContosoHotelsCPULoad
+- name: httpLoadAppName
+  value: ContosoHotelsHttpLoad
+- name: dashboardHiddenTitle
+  value: "Contoso Hotels"
+- name: fabrikamResourceGroupName
+  value: $(prefix)-FabrikamRG$(suffix)
+- name: networkWatcherRGName
+  value: "NetworkWatcherRG"
+- name: packetCaptureName
+  value: $(vmName)-nwpc
+- name: lowSuffix
+  value: $[ lower(replace(variables.suffix, '-', '')) ]
+- name: workspaceName
+  value: $(prefix)-LA$(suffix)
+- name: workspaceResourceGroupName
+  value: $(prefix)-OpsRG-Pri$(suffix)
+- name: automationAccountName
+  value: $(prefix)-AA-Pri$(suffix)
+- name: automationAccountResourceGroupName
+  value: $(prefix)-OpsRG-Pri$(suffix)
+- name: modernAppClusterName
+  value: $(prefix)-ContosoSH360Cluster$(suffix)
+- name: modernAppClusterResourceGroupName
+  value: $(prefix)-ContosoSH360ClusterRG$(suffix)
+- name: suppressedNotificationsVmName
+  value: $(prefix)-AppBEVM01$(suffix)
+- name: suppressedNotificationsVmResourceGroupName
+  value: $(prefix)-RetailRG-Pri$(suffix)
+- name: applicationGatewayName
+  value: $(prefix)-AppFEAppGate-Pri$(suffix)
+- name: applicationGatewayResourceGroupName
+  value: $(prefix)-RetailRG-Pri$(suffix)
+- name: "contosoCustomerCheckWebTestName"
+  value: "Contoso Customer Check"
+- name: "contosoRetailAppServiceHomeWebTestName"
+  value: "Contoso Retail App Service Home"
+- name: "contosoRetailReportsWebTestName"
+  value: "Contoso Retail Reports"
+- name: "contosoRetailVMEmployeeCreateWebTestName"
+  value: "Contoso Retail VM Employee Create"
+- name: "contosoRetailVMHomeWebTestName"
+  value: "Contoso Retail VM Home"
+- name: "networkWatcherRG"
+  value: "NetworkWatcherRG"
+- name: logAnalyticsWorkspaceSkuName
+  value: PerGB2018
+- name: sqldbCollation
+  value: "SQL_Latin1_General_CP1_CI_AS"
+- name: sqldbCatalogCollation
+  value: "SQL_Latin1_General_CP1_CI_AS"
+- name: storageAccountKind
+  value: StorageV2
+- name: storageAccountSku
+  value: Standard_LRS
+- name: appServicePlanSkuName
+  value: Y1
+- name: appServicePlanSkuTier
+  value: Dynamic
+- name: publicIpSkuName
+  value: Standard
+- name: publicIpSkuTier
+  value: Regional
+- name: publicIpSkuAllocationMethod
+  value: Static
+- name: imagePublisher
+  value: "MicrosoftWindowsServer"
+- name: imageOffer
+  value: "WindowsServer"
+- name: imageSku
+  value: "2016-Datacenter"
+- name: imageVersion
+  value: "latest"
+- name: diskSize
+  value: 127
+- name: hiddenTitleAI
+  value: "RetailAppAI - Dashboard"
+- name: keyVaultName
+  value: $(prefix)-retailKV$(suffix)
+- name: keyVaultSkuName
+  value: "Standard"
+- name: keyVaultSkuFamily
+  value: A
+- name: principalType
+  value: "User"
+- name: tableName
+  value: "SigninLogs"
+- name: dataCollectionRuleName
+  value: "dataMasking"
+- name: networkStorageAccountName
+  value: "sanwpc$(location)$(lowSuffix)"
+- name: bytesToCapturePerPacket
+  value: 0
+- name: timeLimitInSeconds
+  value: 1800
+- name: totalBytesPerSession
+  value: 1073741824
+- name: prefix
+  value: Chrysalis
+- name: environment
+  value: Integration
+stages:
+- stage: SecurityTest
+  displayName: Run Security Code Analysis scan
+  condition: False
+  jobs:
+  - job: SecurityCodeAnalysisScans
+    displayName: Run Security Code Analysis Scans
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+- stage: Lint
+  displayName: Bicep Lint
+  condition: False
+  jobs:
+  - job: LintCode
+    displayName: Lint Code
+    steps:
+    - task: CmdLine@2
+      displayName: 'Run Bicep linter'
+      inputs:
+        script: |
+          az bicep build --file $(Build.SourcesDirectory)/bicep/main.bicep
+- stage: Preview
+  displayName: Bicep Preview
+  condition: False
+  jobs:
+  - job: PreviewAzureChanges
+    displayName: Preview Azure changes
+    steps:
+    - task: AzurePowerShell@4
+      name: RunWhatIf
+      displayName: Run what-if
+      inputs:
+        azurePowerShellVersion: LatestVersion
+        azureSubscription: $(azureSubscriptionEndpoint)
+        ScriptType: InlineScript
+        Inline: "$hiddenTitle = \"$(dashboardHiddenTitle)$('$(suffix)' -replace '-', ' - ')\"\n$packetCaptureExists = $true\n\nNew-AzSubscriptionDeployment -Whatif -Location '$(location)' -TemplateFile '$(Build.SourcesDirectory)/bicep/main.bicep' -TemplateParameterObject @{\n  location = '$(location)'\n  prefix = 'Chrysalis'\n  suffix = '$(suffix)'\n  fabrikanResourceGroupName = '$(fabrikamResourceGroupName)'\n  workspaceResourceGroupName = '$(workspaceResourceGroupName)'\n  networkWatcherRGName = '$(networkWatcherRGName)'\n  logAnalyticsWorkspaceSkuName = '$(logAnalyticsworkspaceSkuName)'\n  workspaceName = '$(workspaceName)'\n  retentionPeriod = $(retentionPeriod)\n  dbSkuCapacity = $(dbSkuCapacity)\n  dbRedundancy = '$(dbRedundancy)'\n  dbKind = '$(dbKind)'\n  dbSkuTier = '$(dbSkuTier)'\n  dbSkuName = '$(dbSkuName)'\n  imagePublisher = '$(imagePublisher)'\n  imageOffer = '$(imageOffer)'\n  imageSku = '$(imageSku)'\n  imageVersion = '$(imageVersion)'\n  diskSize = $(diskSize)\n  adminUsername = '$(chVmAdminUser)'\n  adminPassword = '$(chVmAdminPassword)'\n  sqldbCollation = '$(sqldbCollation)'\n  sqldbMaxSizeBytes = $(sqldbMaxSizeBytes)\n  sqldbCatalogCollation = '$(sqldbCatalogCollation)'\n  networkStorageAccountName = '$(networkStorageAccountName)'\n  storageAccountSku = '$(storageAccountSku)'\n  storageAccountKind = '$(storageAccountKind)'\n  appServicePlanSkuName = '$(appServicePlanSkuName)'\n  appServicePlanSkuTier = '$(appServicePlanSkuTier)'\n  publicIpSkuAllocationMethod = '$(publicIpSkuAllocationMethod)'\n  publicIpSkuName = '$(publicIpSkuName)'\n  publicIpSkuTier = '$(publicIpSkuTier)'\n  modernAppClusterName = '$(modernAppClusterName)'\n  modernAppClusterResourceGroupName = '$(modernAppClusterResourceGroupName)'\n  applicationGatewayName = '$(applicationGatewayName)'\n  applicationGatewayResourceGroupName = '$(applicationGatewayResourceGroupName)'\n  appName = '$(appName)'\n  databaseName = '$(databaseName)'\n  usageGenName = '$(usageGenName)'\n  vmComputerName = '$(vmComputerName)'\n  httpLoadAppName = '$(httpLoadAppName)'\n  addressPrefixes = '$(addressPrefixes)'\n  vmSize = '$(vmSize)'\n  hiddenTitle = $hiddenTitle\n  hiddenTitleAI = '$(hiddenTitleAI)'\n  keyVaultName = '$(keyVaultName)'\n  keyVaultSkuName = '$(keyVaultSkuName)' \n  keyVaultSkuFamily = '$(keyVaultSkuFamily)'\n  midFix = '$(midFix)'\n  sqlUserloginID = '$(sqlUserloginID)'\n  sqlUserSID = '$(sqlUserSID)'\n  principalType = '$(principalType)'\n  packetCaptureName = '$(packetCaptureName)'\n  packetCaptureExists = $packetCaptureExists\n  bytesToCapturePerPacket = $(bytesToCapturePerPacket)\n  timeLimitInSeconds = $(timeLimitInSeconds)\n  totalBytesPerSession = $(totalBytesPerSession)\n}\n"
+- stage: Build
+  displayName: Build
+  condition: and( False,  in(dependencies.Preview.result, 'Succeeded','skipped'))
+  jobs:
+  - job: PublishArtifacts
+    displayName: Publish DeployWebAppDsc and UsageDataGenerator packages
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+    - task: PowerShell@2
+      inputs:
+        targetType: inline
+        script: |
+          Invoke-WebRequest 'https://devopsgallerystorage.blob.core.windows.net/packages/xpsdesiredstateconfiguration.8.10.0.nupkg' -O xPSDesiredStateConfiguration.zip
+
+          Invoke-WebRequest 'https://devopsgallerystorage.blob.core.windows.net:443/packages/cchoco.2.5.0.nupkg' -O cChoco.zip
+    - task: ExtractFiles@1
+      inputs:
+        archiveFilePatterns: 'xPSDesiredStateConfiguration.zip'
+        destinationFolder: 'DSC/DeployWebAppDsc/xPSDesiredStateConfiguration'
+    - task: ExtractFiles@1
+      inputs:
+        archiveFilePatterns: 'cChoco.zip'
+        destinationFolder: 'DSC/DeployWebAppDsc/cChoco'
+    - task: ArchiveFiles@2
+      displayName: 'Create DeployWebAppDsc package'
+      inputs:
+        rootFolderOrFile: 'DSC/DeployWebAppDsc'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/dsc/DeployWebAppDsc.zip'
+    - task: ArchiveFiles@2
+      displayName: 'Create UsageDataGenerator package'
+      inputs:
+        rootFolderOrFile: 'UsageDataGenerator'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/function/UsageDataGenerator.zip'
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish packages'
+      inputs:
+        ArtifactName: drop
+  - job: BuildContosoHotelsCPULoad
+    displayName: Build ContosoHotelsCPULoad
+    variables:
+    - name: webAppPackageName
+      value: RetailApp
+    - name: appName
+      value: RetailApp
+    - name: usageGenName
+      value: UsageGenFunc
+    - name: databaseName
+      value: RetailAppDB
+    - name: vmComputerName
+      value: RETAILVM01
+    - name: vmName
+      value: $(prefix)-$(vmComputerName)$(suffix)
+    - name: addressPrefixes
+      value: 172.18.0.0/24
+    - name: cpuLoadAppName
+      value: ContosoHotelsCPULoad
+    - name: httpLoadAppName
+      value: ContosoHotelsHttpLoad
+    - name: dashboardHiddenTitle
+      value: "Contoso Hotels"
+    - name: fabrikamResourceGroupName
+      value: $(prefix)-FabrikamRG$(suffix)
+    - name: networkWatcherRGName
+      value: "NetworkWatcherRG"
+    - name: packetCaptureName
+      value: $(vmName)-nwpc
+    - name: lowSuffix
+      value: $[ lower(replace(variables.suffix, '-', '')) ]
+    - name: workspaceName
+      value: $(prefix)-LA$(suffix)
+    - name: workspaceResourceGroupName
+      value: $(prefix)-OpsRG-Pri$(suffix)
+    - name: automationAccountName
+      value: $(prefix)-AA-Pri$(suffix)
+    - name: automationAccountResourceGroupName
+      value: $(prefix)-OpsRG-Pri$(suffix)
+    - name: modernAppClusterName
+      value: $(prefix)-ContosoSH360Cluster$(suffix)
+    - name: modernAppClusterResourceGroupName
+      value: $(prefix)-ContosoSH360ClusterRG$(suffix)
+    - name: suppressedNotificationsVmName
+      value: $(prefix)-AppBEVM01$(suffix)
+    - name: suppressedNotificationsVmResourceGroupName
+      value: $(prefix)-RetailRG-Pri$(suffix)
+    - name: applicationGatewayName
+      value: $(prefix)-AppFEAppGate-Pri$(suffix)
+    - name: applicationGatewayResourceGroupName
+      value: $(prefix)-RetailRG-Pri$(suffix)
+    - name: "contosoCustomerCheckWebTestName"
+      value: "Contoso Customer Check"
+    - name: "contosoRetailAppServiceHomeWebTestName"
+      value: "Contoso Retail App Service Home"
+    - name: "contosoRetailReportsWebTestName"
+      value: "Contoso Retail Reports"
+    - name: "contosoRetailVMEmployeeCreateWebTestName"
+      value: "Contoso Retail VM Employee Create"
+    - name: "contosoRetailVMHomeWebTestName"
+      value: "Contoso Retail VM Home"
+    - name: "networkWatcherRG"
+      value: "NetworkWatcherRG"
+    - name: logAnalyticsWorkspaceSkuName
+      value: PerGB2018
+    - name: sqldbCollation
+      value: "SQL_Latin1_General_CP1_CI_AS"
+    - name: sqldbCatalogCollation
+      value: "SQL_Latin1_General_CP1_CI_AS"
+    - name: storageAccountKind
+      value: StorageV2
+    - name: storageAccountSku
+      value: Standard_LRS
+    - name: appServicePlanSkuName
+      value: Y1
+    - name: appServicePlanSkuTier
+      value: Dynamic
+    - name: publicIpSkuName
+      value: Standard
+    - name: publicIpSkuTier
+      value: Regional
+    - name: publicIpSkuAllocationMethod
+      value: Static
+    - name: imagePublisher
+      value: "MicrosoftWindowsServer"
+    - name: imageOffer
+      value: "WindowsServer"
+    - name: imageSku
+      value: "2016-Datacenter"
+    - name: imageVersion
+      value: "latest"
+    - name: diskSize
+      value: 127
+    - name: hiddenTitleAI
+      value: "RetailAppAI - Dashboard"
+    - name: keyVaultName
+      value: $(prefix)-retailKV$(suffix)
+    - name: keyVaultSkuName
+      value: "Standard"
+    - name: keyVaultSkuFamily
+      value: A
+    - name: principalType
+      value: "User"
+    - name: tableName
+      value: "SigninLogs"
+    - name: dataCollectionRuleName
+      value: "dataMasking"
+    - name: networkStorageAccountName
+      value: "sanwpc$(location)$(lowSuffix)"
+    - name: bytesToCapturePerPacket
+      value: 0
+    - name: timeLimitInSeconds
+      value: 1800
+    - name: totalBytesPerSession
+      value: 1073741824
+    - name: solution
+      value: '**/$(cpuLoadAppName).sln'
+    - name: buildPlatform
+      value: 'Any CPU'
+    - name: buildConfiguration
+      value: 'release'
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+    - task: NuGetToolInstaller@1
+      displayName: 'Install NuGet'
+    - task: NuGetCommand@2
+      displayName: 'NuGet restore'
+      inputs:
+        restoreSolution: '$(solution)'
+    - task: UseDotNet@2
+      inputs:
+        packageType: 'sdk'
+        version: '3.x'
+    - task: VSBuild@1
+      displayName: 'Build solution'
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+    - task: CopyFiles@2
+      displayName: 'Copy $(cpuLoadAppName) app to scripts'
+      inputs:
+        Contents: '**\bin\*\$(cpuLoadAppName).exe'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)\scripts'
+        flattenFolders: true
+    - task: CopyFiles@2
+      displayName: 'Copy PowerShell scripts'
+      inputs:
+        SourceFolder: 'scripts'
+        Contents: '*.ps1'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)\scripts'
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish artifacts'
+      inputs:
+        ArtifactName: drop
+  - job: BuildContosoHotelsHttpLoad
+    displayName: Build ContosoHotelsHttpLoad
+    condition: succeededOrFailed()
+    variables:
+    - name: webAppPackageName
+      value: RetailApp
+    - name: appName
+      value: RetailApp
+    - name: usageGenName
+      value: UsageGenFunc
+    - name: databaseName
+      value: RetailAppDB
+    - name: vmComputerName
+      value: RETAILVM01
+    - name: vmName
+      value: $(prefix)-$(vmComputerName)$(suffix)
+    - name: addressPrefixes
+      value: 172.18.0.0/24
+    - name: cpuLoadAppName
+      value: ContosoHotelsCPULoad
+    - name: httpLoadAppName
+      value: ContosoHotelsHttpLoad
+    - name: dashboardHiddenTitle
+      value: "Contoso Hotels"
+    - name: fabrikamResourceGroupName
+      value: $(prefix)-FabrikamRG$(suffix)
+    - name: networkWatcherRGName
+      value: "NetworkWatcherRG"
+    - name: packetCaptureName
+      value: $(vmName)-nwpc
+    - name: lowSuffix
+      value: $[ lower(replace(variables.suffix, '-', '')) ]
+    - name: workspaceName
+      value: $(prefix)-LA$(suffix)
+    - name: workspaceResourceGroupName
+      value: $(prefix)-OpsRG-Pri$(suffix)
+    - name: automationAccountName
+      value: $(prefix)-AA-Pri$(suffix)
+    - name: automationAccountResourceGroupName
+      value: $(prefix)-OpsRG-Pri$(suffix)
+    - name: modernAppClusterName
+      value: $(prefix)-ContosoSH360Cluster$(suffix)
+    - name: modernAppClusterResourceGroupName
+      value: $(prefix)-ContosoSH360ClusterRG$(suffix)
+    - name: suppressedNotificationsVmName
+      value: $(prefix)-AppBEVM01$(suffix)
+    - name: suppressedNotificationsVmResourceGroupName
+      value: $(prefix)-RetailRG-Pri$(suffix)
+    - name: applicationGatewayName
+      value: $(prefix)-AppFEAppGate-Pri$(suffix)
+    - name: applicationGatewayResourceGroupName
+      value: $(prefix)-RetailRG-Pri$(suffix)
+    - name: "contosoCustomerCheckWebTestName"
+      value: "Contoso Customer Check"
+    - name: "contosoRetailAppServiceHomeWebTestName"
+      value: "Contoso Retail App Service Home"
+    - name: "contosoRetailReportsWebTestName"
+      value: "Contoso Retail Reports"
+    - name: "contosoRetailVMEmployeeCreateWebTestName"
+      value: "Contoso Retail VM Employee Create"
+    - name: "contosoRetailVMHomeWebTestName"
+      value: "Contoso Retail VM Home"
+    - name: "networkWatcherRG"
+      value: "NetworkWatcherRG"
+    - name: logAnalyticsWorkspaceSkuName
+      value: PerGB2018
+    - name: sqldbCollation
+      value: "SQL_Latin1_General_CP1_CI_AS"
+    - name: sqldbCatalogCollation
+      value: "SQL_Latin1_General_CP1_CI_AS"
+    - name: storageAccountKind
+      value: StorageV2
+    - name: storageAccountSku
+      value: Standard_LRS
+    - name: appServicePlanSkuName
+      value: Y1
+    - name: appServicePlanSkuTier
+      value: Dynamic
+    - name: publicIpSkuName
+      value: Standard
+    - name: publicIpSkuTier
+      value: Regional
+    - name: publicIpSkuAllocationMethod
+      value: Static
+    - name: imagePublisher
+      value: "MicrosoftWindowsServer"
+    - name: imageOffer
+      value: "WindowsServer"
+    - name: imageSku
+      value: "2016-Datacenter"
+    - name: imageVersion
+      value: "latest"
+    - name: diskSize
+      value: 127
+    - name: hiddenTitleAI
+      value: "RetailAppAI - Dashboard"
+    - name: keyVaultName
+      value: $(prefix)-retailKV$(suffix)
+    - name: keyVaultSkuName
+      value: "Standard"
+    - name: keyVaultSkuFamily
+      value: A
+    - name: principalType
+      value: "User"
+    - name: tableName
+      value: "SigninLogs"
+    - name: dataCollectionRuleName
+      value: "dataMasking"
+    - name: networkStorageAccountName
+      value: "sanwpc$(location)$(lowSuffix)"
+    - name: bytesToCapturePerPacket
+      value: 0
+    - name: timeLimitInSeconds
+      value: 1800
+    - name: totalBytesPerSession
+      value: 1073741824
+    - name: solution
+      value: '**/$(httpLoadAppName).sln'
+    - name: buildPlatform
+      value: 'Any CPU'
+    - name: buildConfiguration
+      value: 'release'
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+    - task: NuGetToolInstaller@1
+      displayName: 'Install NuGet'
+    - task: NuGetCommand@2
+      displayName: 'NuGet restore'
+      inputs:
+        restoreSolution: '$(solution)'
+    - task: UseDotNet@2
+      inputs:
+        packageType: 'sdk'
+        version: '3.x'
+    - task: VSBuild@1
+      displayName: 'Build solution'
+      inputs:
+        solution: '$(solution)'
+        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(Build.BinariesDirectory)/$(BuildConfiguration)/$(httpLoadAppName).zip" /p:DeployIisAppPath="Default Web Site"'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+    - task: CopyFiles@2
+      displayName: 'Copy $(httpLoadAppName) app to httpLoad'
+      inputs:
+        SourceFolder: '$(Build.BinariesDirectory)\$(BuildConfiguration)'
+        Contents: '**\*.zip'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)\httpLoad'
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish artifacts'
+      inputs:
+        ArtifactName: drop
+  - job: BuildFabrikamFiberWeb
+    displayName: Build FabrikamFiber.Web
+    variables:
+    - name: webAppPackageName
+      value: RetailApp
+    - name: appName
+      value: RetailApp
+    - name: usageGenName
+      value: UsageGenFunc
+    - name: databaseName
+      value: RetailAppDB
+    - name: vmComputerName
+      value: RETAILVM01
+    - name: vmName
+      value: $(prefix)-$(vmComputerName)$(suffix)
+    - name: addressPrefixes
+      value: 172.18.0.0/24
+    - name: cpuLoadAppName
+      value: ContosoHotelsCPULoad
+    - name: httpLoadAppName
+      value: ContosoHotelsHttpLoad
+    - name: dashboardHiddenTitle
+      value: "Contoso Hotels"
+    - name: fabrikamResourceGroupName
+      value: $(prefix)-FabrikamRG$(suffix)
+    - name: networkWatcherRGName
+      value: "NetworkWatcherRG"
+    - name: packetCaptureName
+      value: $(vmName)-nwpc
+    - name: lowSuffix
+      value: $[ lower(replace(variables.suffix, '-', '')) ]
+    - name: workspaceName
+      value: $(prefix)-LA$(suffix)
+    - name: workspaceResourceGroupName
+      value: $(prefix)-OpsRG-Pri$(suffix)
+    - name: automationAccountName
+      value: $(prefix)-AA-Pri$(suffix)
+    - name: automationAccountResourceGroupName
+      value: $(prefix)-OpsRG-Pri$(suffix)
+    - name: modernAppClusterName
+      value: $(prefix)-ContosoSH360Cluster$(suffix)
+    - name: modernAppClusterResourceGroupName
+      value: $(prefix)-ContosoSH360ClusterRG$(suffix)
+    - name: suppressedNotificationsVmName
+      value: $(prefix)-AppBEVM01$(suffix)
+    - name: suppressedNotificationsVmResourceGroupName
+      value: $(prefix)-RetailRG-Pri$(suffix)
+    - name: applicationGatewayName
+      value: $(prefix)-AppFEAppGate-Pri$(suffix)
+    - name: applicationGatewayResourceGroupName
+      value: $(prefix)-RetailRG-Pri$(suffix)
+    - name: "contosoCustomerCheckWebTestName"
+      value: "Contoso Customer Check"
+    - name: "contosoRetailAppServiceHomeWebTestName"
+      value: "Contoso Retail App Service Home"
+    - name: "contosoRetailReportsWebTestName"
+      value: "Contoso Retail Reports"
+    - name: "contosoRetailVMEmployeeCreateWebTestName"
+      value: "Contoso Retail VM Employee Create"
+    - name: "contosoRetailVMHomeWebTestName"
+      value: "Contoso Retail VM Home"
+    - name: "networkWatcherRG"
+      value: "NetworkWatcherRG"
+    - name: logAnalyticsWorkspaceSkuName
+      value: PerGB2018
+    - name: sqldbCollation
+      value: "SQL_Latin1_General_CP1_CI_AS"
+    - name: sqldbCatalogCollation
+      value: "SQL_Latin1_General_CP1_CI_AS"
+    - name: storageAccountKind
+      value: StorageV2
+    - name: storageAccountSku
+      value: Standard_LRS
+    - name: appServicePlanSkuName
+      value: Y1
+    - name: appServicePlanSkuTier
+      value: Dynamic
+    - name: publicIpSkuName
+      value: Standard
+    - name: publicIpSkuTier
+      value: Regional
+    - name: publicIpSkuAllocationMethod
+      value: Static
+    - name: imagePublisher
+      value: "MicrosoftWindowsServer"
+    - name: imageOffer
+      value: "WindowsServer"
+    - name: imageSku
+      value: "2016-Datacenter"
+    - name: imageVersion
+      value: "latest"
+    - name: diskSize
+      value: 127
+    - name: hiddenTitleAI
+      value: "RetailAppAI - Dashboard"
+    - name: keyVaultName
+      value: $(prefix)-retailKV$(suffix)
+    - name: keyVaultSkuName
+      value: "Standard"
+    - name: keyVaultSkuFamily
+      value: A
+    - name: principalType
+      value: "User"
+    - name: tableName
+      value: "SigninLogs"
+    - name: dataCollectionRuleName
+      value: "dataMasking"
+    - name: networkStorageAccountName
+      value: "sanwpc$(location)$(lowSuffix)"
+    - name: bytesToCapturePerPacket
+      value: 0
+    - name: timeLimitInSeconds
+      value: 1800
+    - name: totalBytesPerSession
+      value: 1073741824
+    - name: solution
+      value: '**/FabrikamFiber.CallCenter.sln'
+    - name: buildPlatform
+      value: 'Any CPU'
+    - name: buildConfiguration
+      value: 'Debug'
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+    - task: NuGetToolInstaller@1
+      displayName: 'Install NuGet'
+    - task: NuGetCommand@2
+      displayName: 'NuGet restore'
+      inputs:
+        restoreSolution: '$(solution)'
+    - task: UseDotNet@2
+      inputs:
+        packageType: 'sdk'
+        version: '3.x'
+    - task: VSBuild@1
+      displayName: 'Build solution'
+      inputs:
+        solution: '$(solution)'
+        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(Build.BinariesDirectory)/$(BuildConfiguration)/$(webAppPackageName).zip"'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+    - task: CopyFiles@2
+      displayName: 'Copy Web App package to web'
+      inputs:
+        SourceFolder: '$(Build.BinariesDirectory)\$(BuildConfiguration)'
+        Contents: |
+          **\*.zip
+          **\*.deploy.cmd
+          **\*.SetParameters.xml
+        TargetFolder: '$(Build.ArtifactStagingDirectory)\app'
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish artifacts'
+      inputs:
+        ArtifactName: drop
+- stage: BicepDeployment
+  displayName: Bicep Deployment
+  condition: and( False,  in(dependencies.Preview.result, 'Succeeded'), in(dependencies.Build.result, 'Succeeded','skipped') )
+  jobs:
+  - job: Deploy
+    displayName: Deploy
+    variables:
+    - name: webAppPackageName
+      value: RetailApp
+    - name: appName
+      value: RetailApp
+    - name: usageGenName
+      value: UsageGenFunc
+    - name: databaseName
+      value: RetailAppDB
+    - name: vmComputerName
+      value: RETAILVM01
+    - name: vmName
+      value: $(prefix)-$(vmComputerName)$(suffix)
+    - name: addressPrefixes
+      value: 172.18.0.0/24
+    - name: cpuLoadAppName
+      value: ContosoHotelsCPULoad
+    - name: httpLoadAppName
+      value: ContosoHotelsHttpLoad
+    - name: dashboardHiddenTitle
+      value: "Contoso Hotels"
+    - name: fabrikamResourceGroupName
+      value: $(prefix)-FabrikamRG$(suffix)
+    - name: networkWatcherRGName
+      value: "NetworkWatcherRG"
+    - name: packetCaptureName
+      value: $(vmName)-nwpc
+    - name: lowSuffix
+      value: $[ lower(replace(variables.suffix, '-', '')) ]
+    - name: workspaceName
+      value: $(prefix)-LA$(suffix)
+    - name: workspaceResourceGroupName
+      value: $(prefix)-OpsRG-Pri$(suffix)
+    - name: automationAccountName
+      value: $(prefix)-AA-Pri$(suffix)
+    - name: automationAccountResourceGroupName
+      value: $(prefix)-OpsRG-Pri$(suffix)
+    - name: modernAppClusterName
+      value: $(prefix)-ContosoSH360Cluster$(suffix)
+    - name: modernAppClusterResourceGroupName
+      value: $(prefix)-ContosoSH360ClusterRG$(suffix)
+    - name: suppressedNotificationsVmName
+      value: $(prefix)-AppBEVM01$(suffix)
+    - name: suppressedNotificationsVmResourceGroupName
+      value: $(prefix)-RetailRG-Pri$(suffix)
+    - name: applicationGatewayName
+      value: $(prefix)-AppFEAppGate-Pri$(suffix)
+    - name: applicationGatewayResourceGroupName
+      value: $(prefix)-RetailRG-Pri$(suffix)
+    - name: "contosoCustomerCheckWebTestName"
+      value: "Contoso Customer Check"
+    - name: "contosoRetailAppServiceHomeWebTestName"
+      value: "Contoso Retail App Service Home"
+    - name: "contosoRetailReportsWebTestName"
+      value: "Contoso Retail Reports"
+    - name: "contosoRetailVMEmployeeCreateWebTestName"
+      value: "Contoso Retail VM Employee Create"
+    - name: "contosoRetailVMHomeWebTestName"
+      value: "Contoso Retail VM Home"
+    - name: "networkWatcherRG"
+      value: "NetworkWatcherRG"
+    - name: logAnalyticsWorkspaceSkuName
+      value: PerGB2018
+    - name: sqldbCollation
+      value: "SQL_Latin1_General_CP1_CI_AS"
+    - name: sqldbCatalogCollation
+      value: "SQL_Latin1_General_CP1_CI_AS"
+    - name: storageAccountKind
+      value: StorageV2
+    - name: storageAccountSku
+      value: Standard_LRS
+    - name: appServicePlanSkuName
+      value: Y1
+    - name: appServicePlanSkuTier
+      value: Dynamic
+    - name: publicIpSkuName
+      value: Standard
+    - name: publicIpSkuTier
+      value: Regional
+    - name: publicIpSkuAllocationMethod
+      value: Static
+    - name: imagePublisher
+      value: "MicrosoftWindowsServer"
+    - name: imageOffer
+      value: "WindowsServer"
+    - name: imageSku
+      value: "2016-Datacenter"
+    - name: imageVersion
+      value: "latest"
+    - name: diskSize
+      value: 127
+    - name: hiddenTitleAI
+      value: "RetailAppAI - Dashboard"
+    - name: keyVaultName
+      value: $(prefix)-retailKV$(suffix)
+    - name: keyVaultSkuName
+      value: "Standard"
+    - name: keyVaultSkuFamily
+      value: A
+    - name: principalType
+      value: "User"
+    - name: tableName
+      value: "SigninLogs"
+    - name: dataCollectionRuleName
+      value: "dataMasking"
+    - name: networkStorageAccountName
+      value: "sanwpc$(location)$(lowSuffix)"
+    - name: bytesToCapturePerPacket
+      value: 0
+    - name: timeLimitInSeconds
+      value: 1800
+    - name: totalBytesPerSession
+      value: 1073741824
+    - name: localTempFolder
+      value: C:\Temp
+    - name: localScriptFolder
+      value: C:\scripts
+    - name: dscContainerName
+      value: dsc
+    - name: functionWebhookName
+      value: UsageDataGeneratorWebhook
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+    - task: 30f35852-3f7e-4c0c-9a88-e127b4f97211@1
+      inputs:
+        alias: current
+        artifact: drop
+    - task: AzurePowerShell@4
+      displayName: 'Create Resources'
+      name: resourceDeployment
+      inputs:
+        azurePowerShellVersion: LatestVersion
+        azureSubscription: $(azureSubscriptionEndpoint)
+        ScriptType: InlineScript
+        Inline: "
