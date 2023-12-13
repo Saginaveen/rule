@@ -1,0 +1,15 @@
+
+2023-12-13 09:08:19.3725495Z [INF] Starting Bootstrap for InnerSourceID: RbTtKB8NbW and BuildNumber: 20231211.1 at target 
+2023-12-13 09:08:20.4868678Z [INF] Downloaded the Package for InnerSourceID: RbTtKB8NbW and BuildNumber: 20231211.1
+2023-12-13 09:08:22.2452816Z [INF] Extracted the Package for InnerSourceID: RbTtKB8NbW and BuildNumber: 20231211.1
+2023-12-13 09:08:22.346256Z [INF] Service Connection POST request URL :    https://dev.azure.com/servicescode-test/_apis/serviceendpoint/endpoints?api-version=7.0
+2023-12-13 09:08:23.0465629Z [INF] Service Connection Contoso Hotels Tenant - Integration-76afb6ab created successfully
+2023-12-13 09:08:24.5973104Z [INF] Repository ContosoRetail-New-c7938a09 doesn't exist at target. Creating the Repository.
+2023-12-13 09:08:25.0345219Z [INF] Clonning the Repository ContosoRetail-New-c7938a09.
+2023-12-13 09:08:25.1408068Z [INF] Publishing branch: origin/main in Repository: ContosoRetail-New-c7938a09 on Target DevOps
+2023-12-13 09:09:27.7727871Z [INF] Repository ContosoRetail-New-c7938a09 clonned successfully.
+2023-12-13 09:09:27.7844483Z [INF] Creating the pipeline at target location Automations
+2023-12-13 09:09:30.6265655Z [INF] Pipeline Automations\ContosoRetail-New-6cee9c9f created successfully
+2023-12-13 09:09:36.3004781Z [INF] Pipeline ContosoRetail-New-6cee9c9f run executed with in-progress state.
+2023-12-13 09:09:59.911Z [INF] Pipeline ContosoRetail-New-6cee9c9f run 'completed' with 'Succeeded'
+2023-12-13 09:09:59.9176416Z [INF] Bootstrap Success 
