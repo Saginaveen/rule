@@ -1,0 +1,97 @@
+{
+  "build": {
+    "content": [
+      {
+        "src": "docs/",
+        "files": ["**/*.{md,yml}"],
+        "dest": "."
+      }
+    ],
+    "resource": [
+      {
+        "src": "docs/",
+        "files": ["**/*.{jpg,jpeg,png,bmp,gif,svg}"],
+        "dest": "."
+      }
+    ],
+    "externalReference": [],
+    "dest": "",
+    "title": "Evergreen Delivery IP",
+    "serve": false,
+    "globalMetadata": {
+      "_appTitle": "Evergreen Delivery IP",
+      "_disableContribution": false,
+      "_disableBreadcrumb": true,
+      "_gitContribute": {
+        "repo": "https://dev.azure.com/v-anupkasat/_git/Docs-As-Code-PAT-Test",
+        "branch": "evergreen-pdf"
+      },
+      "_gitUrlPattern":"vso"
+    }
+  },
+ "pdf": {
+    "template": [
+      "pdf.default"
+    ],
+    "keepRawFiles": false,
+    "generatesAppendices": "true",
+    "content": [
+            {
+                "src": "docs/",
+                "files": [ "**/*.{md,yml}" ],
+                "dest": ".",
+                "exclude": [
+                    "**/bin/**",
+                    "**/obj/**",
+                    "_site_pdf/**",
+                    "pipelines/telemetry/**.yml",
+                    "pipelines/website/**.yml",
+                    "pipelines/infra/**.yml",
+                     "docs/initiative/toc.{md,yml}",
+                    "docs/approach/toc.{md,yml}",
+                    "docs/guidance/toc.yml",
+                    "docs/resources/toc.{md,yml}"
+                ]
+            },
+            {
+                "files": [
+                    "docs/initiative/**.{md,yml}",
+                    "docs/approach/**.{md,yml}",
+                    "docs/guidance/**.{md,yml}",
+                    "docs/resources/**.{md,yml}",
+                    "docs/**.{md,yml}"
+                ]                
+            }
+        ],
+    "resource": [
+      {
+        "src": "docs/",
+        "files": [
+          "**/*.{jpg,jpeg,png,bmp,gif,svg}"
+        ],
+        "dest": ".",
+        "exclude": [
+          "**/bin/**",
+          "**/obj/**",
+          "_site_pdf/**"
+        ]
+      }
+    ],
+    "overwrite": [
+      {
+        "files": [
+          "docs/**.md"
+        ],
+        "exclude": [
+          "**/bin/**",
+          "**/obj/**",
+          "_site_pdf/**"
+        ]
+      }
+    ],
+    "wkhtmltopdf": {
+      "filePath": "C:/home/site/DocFXTool/wkhtmltopdf.exe"
+    },
+    "dest": "_site_pdf"
+  }
+}
